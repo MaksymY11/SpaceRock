@@ -1,10 +1,18 @@
 using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+
 
 public class RockController : MonoBehaviour
 {
     private Rigidbody rb;
     private Vector2 touchStartPos;
     private bool isDragging = false;
+    public Image fillImage;
+    public GameObject fracturedRock;
+    private float pressTimer = 0f;
+    private float pressDuration = 2f;
+    private bool isShattering = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -20,7 +28,7 @@ public class RockController : MonoBehaviour
     {
         Fling();
         Pinch();
-        Press();
+        Shatter();
         Bounce();
     }
 
@@ -100,12 +108,65 @@ public class RockController : MonoBehaviour
         }
     }
 
-    void Press()
+    // INPUT 3: Holding your finger over the rock for 2 seconds triggers ShatterAndReset()
+    void Shatter()
     {
+        if (isShattering) return; // block new input during shatter sequence
 
+        if (Input.touchCount == 1)
+        {
+            if (isDragging)
+            {
+                pressTimer += Time.deltaTime;
+                fillImage.fillAmount = pressTimer / pressDuration;
+
+                if (pressTimer >= pressDuration)
+                {
+                    StartCoroutine(ShatterAndReset());
+                }
+            }
+            else // User lifting finger, on finger not being on rock resets the meter
+            {
+                pressTimer = 0f;
+                fillImage.fillAmount = 0f;
+            }
+        }
     }
 
-    // Bounces rock along screen edges by 
+    // Hides the rock, spawns fractured prefab with explosion force, then restores rock after delay
+    IEnumerator ShatterAndReset()
+        {
+            isShattering = true;
+            pressTimer = 0f;
+            fillImage.fillAmount = 0f;
+
+            // Hiding the rock prefab
+            foreach (Renderer r in GetComponentsInChildren<Renderer>())
+                r.enabled = false;
+            GetComponent<Collider>().enabled = false;
+            rb.linearVelocity = Vector3.zero;
+
+            // Spawning fracture prefab
+            GameObject fracture = Instantiate(fracturedRock, transform.position, transform.rotation);
+            fracture.transform.localScale = transform.localScale;
+            foreach (Transform piece in fracture.transform)         // for each piece of fractured rock,
+            {                                                      // we get it's rigidbody component, remove gravity,
+            Rigidbody pieceRb = piece.GetComponent<Rigidbody>();  // and launch it outward with explosion force
+            pieceRb.useGravity = false;
+            pieceRb.AddExplosionForce(150f, fracture.transform.position, 5f);
+            }
+
+            yield return new WaitForSeconds(3f);
+            Destroy(fracture);
+
+            // Restore the originl prefab
+            GetComponent<Renderer>().enabled = true;
+            GetComponent<Collider>().enabled = true;
+
+            isShattering = false;
+        }
+
+    // Keeps rock within screen edges by reversing it's velocity
     void Bounce()
     {
         if (isDragging) return;
