@@ -79,7 +79,7 @@ public class RockController : MonoBehaviour
             isDragging = false; // To prevent Fling() from dragging object (just in case)
 
             // Scale clamps
-            float maxScale = 5f;
+            float maxScale = 2f;
             float minScale = 0.3f;
 
             // Data for each finger
