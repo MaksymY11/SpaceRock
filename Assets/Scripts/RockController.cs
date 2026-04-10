@@ -13,6 +13,7 @@ public class RockController : MonoBehaviour
     private float pressTimer = 0f;
     private float pressDuration = 2f;
     private bool isShattering = false;
+    private TrailRenderer trail;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -20,13 +21,14 @@ public class RockController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.useGravity = false;
         rb.linearDamping = 1f; // Sphere should loose speed over time
-
+        trail = GetComponent<TrailRenderer>();
     }
 
     // Update is called once per frame
     void Update()
     {
         Fling();
+        UpdateTrail();
         Pinch();
         Shatter();
         Bounce();
@@ -46,7 +48,7 @@ public class RockController : MonoBehaviour
             {
                 // Fires the ray and if it hits the collider fills hit with result
                 if (Physics.Raycast(ray, out hit))
-                {   
+                {
                     // checks if what was hit is our rock prefab
                     if (hit.transform == transform)
                     {
@@ -56,7 +58,7 @@ public class RockController : MonoBehaviour
                 }
                 touchStartPos = touch.position;
             }
-            
+
             // Drag sphere to follow finger each frame
             if (touch.phase == TouchPhase.Moved && isDragging == true)
             {
@@ -71,11 +73,18 @@ public class RockController : MonoBehaviour
                 if (isDragging)
                 {
                     Vector2 fling = touch.deltaPosition / touch.deltaTime; // fling vector is (how far finger moved in last frame) / (finger's speed at moment of release)
-                    rb.linearVelocity = new Vector3(fling.x, fling.y, 0) *0.01f; // assing sphere's velocity with 
+                    rb.linearVelocity = new Vector3(fling.x, fling.y, 0) * 0.01f; // assing sphere's velocity with 
                     isDragging = false;
                 }
             }
         }
+    }
+
+    // Grabs rock's width for each frame and changes trail's width to match rock
+    void UpdateTrail()
+    {
+        trail.startWidth = transform.localScale.x * 3.5f;
+        trail.endWidth = 0f;
     }
 
     // INPUT 2: Using two fingers, measures distance between fingers for each frame, applies ratio to scale, clamped between 0.3 and 5.0
@@ -141,19 +150,19 @@ public class RockController : MonoBehaviour
             fillImage.fillAmount = 0f;
 
             // Hiding the rock prefab
-            foreach (Renderer r in GetComponentsInChildren<Renderer>())
-                r.enabled = false;
+            GetComponent<Renderer>().enabled = false;
             GetComponent<Collider>().enabled = false;
+            trail.enabled = false;
             rb.linearVelocity = Vector3.zero;
 
             // Spawning fracture prefab
             GameObject fracture = Instantiate(fracturedRock, transform.position, transform.rotation);
             fracture.transform.localScale = transform.localScale;
-            foreach (Transform piece in fracture.transform)         // for each piece of fractured rock,
-            {                                                      // we get it's rigidbody component, remove gravity,
-            Rigidbody pieceRb = piece.GetComponent<Rigidbody>();  // and launch it outward with explosion force
-            pieceRb.useGravity = false;
-            pieceRb.AddExplosionForce(150f, fracture.transform.position, 5f);
+            foreach (Transform piece in fracture.transform)             // for each piece of fractured rock,
+            {                                                          // we get it's rigidbody component, remove gravity,
+                Rigidbody pieceRb = piece.GetComponent<Rigidbody>();  // and launch it outward with explosion force
+                pieceRb.useGravity = false;
+                pieceRb.AddExplosionForce(150f, fracture.transform.position, 5f);
             }
 
             yield return new WaitForSeconds(3f);
@@ -162,6 +171,7 @@ public class RockController : MonoBehaviour
             // Restore the originl prefab
             GetComponent<Renderer>().enabled = true;
             GetComponent<Collider>().enabled = true;
+            trail.enabled = true;
 
             isShattering = false;
         }
