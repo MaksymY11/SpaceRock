@@ -97,3 +97,13 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Third-party Assets
+Assets/BreakableAsteroids/
+Assets/BreakableAsteroids.meta
+Assets/Space Skybox/
+Assets/Space Skybox.meta
+Assets/Vefects/
+Assets/Vefects.meta
+Assets/Prefabs/
+Assets/Prefabs.meta
