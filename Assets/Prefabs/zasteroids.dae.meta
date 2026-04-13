@@ -98,5 +98,5 @@ AssetOrigin:
   productId: 167825
   packageName: Breakable Asteroids
   packageVersion: 1.0
-  assetPath: Assets/BreakableAsteroids/Asteroids/zasteroids.dae
+  assetPath: Assets/Prefabs/zasteroids.dae
   uploadId: 365415

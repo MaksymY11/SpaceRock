@@ -14,6 +14,11 @@ public class RockController : MonoBehaviour
     private float pressDuration = 2f;
     private bool isShattering = false;
     private TrailRenderer trail;
+    private AudioSource audioSource;
+
+    public AudioClip[] flingSounds;
+    public AudioClip[] bounceSounds;
+    public AudioClip[] shatterSound;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -22,6 +27,7 @@ public class RockController : MonoBehaviour
         rb.useGravity = false;
         rb.linearDamping = 1f; // Sphere should loose speed over time
         trail = GetComponent<TrailRenderer>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -74,6 +80,8 @@ public class RockController : MonoBehaviour
                 {
                     Vector2 fling = touch.deltaPosition / touch.deltaTime; // fling vector is (how far finger moved in last frame) / (finger's speed at moment of release)
                     rb.linearVelocity = new Vector3(fling.x, fling.y, 0) * 0.01f; // assing sphere's velocity with 
+                    AudioClip clip = flingSounds[Random.Range(0, flingSounds.Length)];
+                    audioSource.PlayOneShot(clip, 1.5f);
                     isDragging = false;
                 }
             }
@@ -146,6 +154,7 @@ public class RockController : MonoBehaviour
     IEnumerator ShatterAndReset()
         {
             isShattering = true;
+            isDragging = false;
             pressTimer = 0f;
             fillImage.fillAmount = 0f;
 
@@ -157,6 +166,8 @@ public class RockController : MonoBehaviour
 
             // Spawning fracture prefab
             GameObject fracture = Instantiate(fracturedRock, transform.position, transform.rotation);
+            AudioClip clip = shatterSound[0];
+            audioSource.PlayOneShot(clip);
             fracture.transform.localScale = transform.localScale;
             foreach (Transform piece in fracture.transform)             // for each piece of fractured rock,
             {                                                          // we get it's rigidbody component, remove gravity,
@@ -165,6 +176,7 @@ public class RockController : MonoBehaviour
                 pieceRb.AddExplosionForce(150f, fracture.transform.position, 5f);
             }
 
+            StartCoroutine(ScreenShake(0.3f, 0.15f));
             yield return new WaitForSeconds(3f);
             Destroy(fracture);
 
@@ -175,6 +187,23 @@ public class RockController : MonoBehaviour
 
             isShattering = false;
         }
+
+    // Screen Shake on fracture
+    IEnumerator ScreenShake(float duration, float magnitude)
+    {
+        Vector3 originalPos = Camera.main.transform.localPosition;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            Camera.main.transform.localPosition = originalPos + (Vector3)(Random.insideUnitCircle *  magnitude);
+            elapsed += Time.deltaTime;
+            yield return null; // This line tells unity to render each frame, then continue to next frame. Without it camera would just flicker for duration in parameters.
+        }
+
+        // Restore back to original position
+        Camera.main.transform.localPosition = originalPos;
+    }
 
     // Keeps rock within screen edges by reversing it's velocity
     void Bounce()
@@ -202,6 +231,8 @@ public class RockController : MonoBehaviour
         {
             rb.linearVelocity = new Vector3(Mathf.Abs(rb.linearVelocity.x), rb.linearVelocity.y, 0);
             pos.x = bottomLeft.x + radius;
+            AudioClip clip = bounceSounds[Random.Range(0, bounceSounds.Length)];
+            audioSource.PlayOneShot(clip, 0.5f);
         }
 
         // Bottom
@@ -209,6 +240,8 @@ public class RockController : MonoBehaviour
         {
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, Mathf.Abs(rb.linearVelocity.y), 0);
             pos.y = bottomLeft.y + radius;
+            AudioClip clip = bounceSounds[Random.Range(0, bounceSounds.Length)];
+            audioSource.PlayOneShot(clip, 0.5f);
         }
 
         // Right
@@ -216,6 +249,8 @@ public class RockController : MonoBehaviour
         {   
             rb.linearVelocity = new Vector3(-Mathf.Abs(rb.linearVelocity.x), rb.linearVelocity.y, 0);
             pos.x = topRight.x - radius;
+            AudioClip clip = bounceSounds[Random.Range(0, bounceSounds.Length)];
+            audioSource.PlayOneShot(clip, 0.5f);
         }
 
         // Top
@@ -223,6 +258,8 @@ public class RockController : MonoBehaviour
         {
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, -Mathf.Abs(rb.linearVelocity.y), 0);
             pos.y = topRight.y - radius;
+            AudioClip clip = bounceSounds[Random.Range(0, bounceSounds.Length)];
+            audioSource.PlayOneShot(clip, 0.5f);
         }
 
         rb.MovePosition(pos); // Applies clamped position back to rb
